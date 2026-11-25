@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reventa Amazon</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mu:#6b7280;--bd:#e3e6ea;--ac:#0f766e;--ok:#15803d;--bad:#b91c1c;--warn:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111418;--card:#1a1f26;--tx:#e8eaed;--mu:#9aa3ad;--bd:#2c333c;--ac:#2dd4bf;--ok:#4ade80;--bad:#f87171;--warn:#fbbf24}}
+:root[data-theme="dark"]{--bg:#111418;--card:#1a1f26;--tx:#e8eaed;--mu:#9aa3ad;--bd:#2c333c;--ac:#2dd4bf;--ok:#4ade80;--bad:#f87171;--warn:#fbbf24}
+*{box-sizing:border-box}html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,sans-serif;padding:16px}
+h1{font-size:20px;margin:0 0 12px}h2{font-size:15px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.k{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px}
+.k small{color:var(--mu);display:block}.k b{font-size:18px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:16px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+th{color:var(--mu);font-weight:600;font-size:12px}
+td.n,th.n{text-align:right}
+.f{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.f label{display:flex;flex-direction:column;font-size:12px;color:var(--mu);gap:2px}
+input,select{background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;font:inherit}
+button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:7px 12px;font:inherit;cursor:pointer}
+button.g{background:transparent;color:var(--mu);border:1px solid var(--bd);padding:4px 8px}
+.pos{color:var(--ok)}.neg{color:var(--bad)}.w{color:var(--warn)}
+.tools{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<h1>📦 Reventa Amazon (COP)</h1>
+<div class="grid" id="kpis"></div>
+
+<div class="card">
+<h2>Pedidos</h2>
+<div class="scroll"><table id="tOrd"></table></div>
+<h2 style="margin-top:14px">Agregar pedido</h2>
+<div class="f">
+<label>Fecha<input type="date" id="oDate"></label>
+<label>N.º pedido<input id="oNum" placeholder="114-..."></label>
+<label>Producto<input id="oProd" style="width:220px"></label>
+<label>Unidades<input type="number" id="oUn" min="1" style="width:80px"></label>
+<label>Total COP<input type="number" id="oTot" min="0" style="width:120px"></label>
+<label>Estado<select id="oSt"></select></label>
+<button onclick="addOrd()">Agregar</button>
+</div>
+</div>
+
+<div class="card">
+<h2>Registrar venta</h2>
+<div class="f">
+<label>Fecha<input type="date" id="sDate"></label>
+<label>Pedido (entregado)<select id="sOrd" style="max-width:260px"></select></label>
+<label>Cliente<input id="sCli" placeholder="¿A quién?" style="width:150px"></label>
+<label>Unidades<input type="number" id="sUn" min="1" style="width:80px"></label>
+<label>Precio venta/u COP<input type="number" id="sPr" min="0" style="width:130px"></label>
+<button onclick="addSale()">Vender</button>
+</div>
+</div>
+
+<div class="card">
+<h2>Ventas</h2>
+<div class="scroll"><table id="tSal"></table></div>
+</div>
+
+<div class="tools">
+<button class="g" onclick="exp()">Exportar respaldo</button>
+<label class="g" style="border:1px solid var(--bd);border-radius:6px;padding:4px 8px;color:var(--mu);cursor:pointer">Importar respaldo<input type="file" accept=".json" onchange="imp(event)" hidden></label>
+</div>
+
+<script>
+const ST=["En camino","Entregado","Devuelto"];
+const KEY="reventa-amazon-v1";
+const seed={orders:[
+{id:1,date:"2026-11-12",num:"114-7359891-4119437",prod:"Vaseline Lip Therapy Rosy Lips Mini 12-Pack",units:12,total:107337.78,st:"Entregado"},
+{id:2,date:"2026-11-13",num:"114-6678400-2626614",prod:"Vaseline Cocoa Radiant Gel Oil (6 x 1.69 fl oz)",units:6,total:47612.99,st:"Devuelto"},
+{id:3,date:"2026-11-17",num:"114-6567263-7587420",prod:"eos Shea Better Sensitive Skin Body Lotion 16 fl oz",units:1,total:33834.66,st:"En camino"},
+{id:4,date:"2026-11-17",num:"114-9614668-1873841",prod:"Vaseline Lip Therapy Rosy Lips Mini 12-Pack",units:12,total:108562.76,st:"En camino"},
+{id:5,date:"2026-11-22",num:"114-5357583-1828249",prod:"eos Shea Better Body Lotion Strawberry Dream 16 fl oz",units:1,total:35730.19,st:"En camino"},
+{id:6,date:"2026-11-23",num:"114-5239261-4811452",prod:"Vaseline Cocoa Radiant Gel Oil (6 x 1.69 fl oz)",units:6,total:60494.05,st:"En camino"}],sales:[],nid:7};
+let D;
+try{D=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!D||!D.orders)D=JSON.parse(JSON.stringify(seed));
+function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}render()}
+const $=id=>document.getElementById(id);
+const M=n=>"$"+Math.round(n).toLocaleString("es-CO");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const cu=o=>o.total/o.units;
+const sold=o=>D.sales.filter(s=>s.oid==o.id).reduce((a,s)=>a+s.un,0);
+const ord=id=>D.orders.find(o=>o.id==id);
+const cls=n=>n>0?"pos":n<0?"neg":"";
+$("oSt").innerHTML=ST.map(s=>`<option>${s}</option>`).join("");
+$("oDate").value=$("sDate").value=new Date().toISOString().slice(0,10);
+
+function render(){
+ const act=D.orders.filter(o=>o.st!="Devuelto"), del=act.filter(o=>o.st=="Entregado"), cam=act.filter(o=>o.st=="En camino");
+ const sum=(a,f)=>a.reduce((x,o)=>x+f(o),0);
+ const spent=sum(act,o=>o.total), uTot=sum(act,o=>o.units), uDel=sum(del,o=>o.units), uCam=sum(cam,o=>o.units);
+ const uSold=D.sales.reduce((a,s)=>a+s.un,0);
+ const rev=D.sales.reduce((a,s)=>a+s.un*s.pr,0);
+ const costSold=D.sales.reduce((a,s)=>{const o=ord(s.oid);return a+(o?cu(o)*s.un:0)},0);
+ const profit=rev-costSold, stock=uDel-uSold;
+ const stockVal=sum(del,o=>cu(o)*(o.units-sold(o)));
+ const k=[["Unidades compradas",uTot],["Entregadas",uDel],["En camino",uCam],["Vendidas",uSold],["Me quedan (en mano)",stock],
+ ["Gastado",M(spent)],["Ingresos por ventas",M(rev)],["Ganancia (ventas)",`<span class="${cls(profit)}">${M(profit)}</span>`],
+ ["Balance (ingresos − gastado)",`<span class="${cls(rev-spent)}">${M(rev-spent)}</span>`],["Costo del stock en mano",M(stockVal)]];
+ $("kpis").innerHTML=k.map(x=>`<div class="k"><small>${x[0]}</small><b>${x[1]}</b></div>`).join("");
+
+ $("tOrd").innerHTML=`<tr><th>Fecha</th><th>Producto</th><th>Pedido</th><th class=n>Unid.</th><th class=n>Total</th><th class=n>Costo/u</th><th>Estado</th><th class=n>Vendidas</th><th class=n>Quedan</th><th class=n>Ganancia</th><th></th></tr>`+
+ D.orders.map(o=>{const v=sold(o),g=D.sales.filter(s=>s.oid==o.id).reduce((a,s)=>a+s.un*(s.pr-cu(o)),0);const ret=o.st=="Devuelto";
+ return `<tr style="${ret?'opacity:.55':''}"><td>${o.date}</td><td>${esc(o.prod)}</td><td>${esc(o.num)}</td><td class=n>${o.units}</td><td class=n>${M(o.total)}</td><td class=n>${M(cu(o))}</td>
+ <td><select onchange="setSt(${o.id},this.value)">${ST.map(s=>`<option ${s==o.st?"selected":""}>${s}</option>`).join("")}</select></td>
+ <td class=n>${v}</td><td class=n>${o.st=="Entregado"?o.units-v:"—"}</td><td class="n ${cls(g)}">${o.st=="Entregado"?M(g):"—"}</td>
+ <td><button class=g onclick="delOrd(${o.id})">✕</button></td></tr>`}).join("");
+
+ const av=D.orders.filter(o=>o.st=="Entregado");
+ $("sOrd").innerHTML=av.length?av.map(o=>`<option value="${o.id}">${esc(o.prod)} · ${o.date} · quedan ${o.units-sold(o)}</option>`).join(""):`<option value="">Sin pedidos entregados</option>`;
+
+ $("tSal").innerHTML=`<tr><th>Fecha</th><th>Producto</th><th>Cliente</th><th class=n>Unid.</th><th class=n>Precio/u</th><th class=n>Total</th><th class=n>Ganancia</th><th></th></tr>`+
+ (D.sales.length?D.sales.slice().reverse().map(s=>{const o=ord(s.oid);const g=o?s.un*(s.pr-cu(o)):0;
+ return `<tr><td>${s.date}</td><td>${o?esc(o.prod):"?"}</td><td>${esc(s.cli||"—")}</td><td class=n>${s.un}</td><td class=n>${M(s.pr)}</td><td class=n>${M(s.un*s.pr)}</td><td class="n ${cls(g)}">${M(g)}</td><td><button class=g onclick="delSale(${s.id})">✕</button></td></tr>`}).join(""):`<tr><td colspan=8 style="color:var(--mu)">Aún no hay ventas.</td></tr>`);
+}
+function setSt(id,v){ord(id).st=v;save()}
+function delOrd(id){if(!confirm("¿Eliminar pedido y sus ventas?"))return;D.orders=D.orders.filter(o=>o.id!=id);D.sales=D.sales.filter(s=>s.oid!=id);save()}
+function delSale(id){D.sales=D.sales.filter(s=>s.id!=id);save()}
+function addOrd(){
+ const u=+$("oUn").value,t=+$("oTot").value,p=$("oProd").value.trim();
+ if(!p||u<1||t<=0)return alert("Completa producto, unidades y total.");
+ D.orders.push({id:D.nid++,date:$("oDate").value,num:$("oNum").value.trim(),prod:p,units:u,total:t,st:$("oSt").value});
+ ["oNum","oProd","oUn","oTot"].forEach(i=>$(i).value="");save()}
+function addSale(){
+ const o=ord($("sOrd").value),u=+$("sUn").value,p=+$("sPr").value;
+ if(!o)return alert("Elige un pedido entregado.");
+ if(u<1||p<=0)return alert("Indica unidades y precio de venta.");
+ if(u>o.units-sold(o))return alert("No te quedan tantas unidades de ese pedido.");
+ D.sales.push({id:D.nid++,oid:o.id,date:$("sDate").value,cli:$("sCli").value.trim(),un:u,pr:p});
+ ["sCli","sUn","sPr"].forEach(i=>$(i).value="");save()}
+function exp(){const a=document.createElement("a");a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(D));a.download="reventa-amazon.json";a.click()}
+function imp(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.orders)throw 0;D=j;save()}catch(x){alert("Archivo no válido")}};r.readAsText(f)}
+render();
+</script>
+</body>
+</html>
