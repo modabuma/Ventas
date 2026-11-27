@@ -58,13 +58,13 @@ button.g{background:transparent;color:var(--mu);border:1px solid var(--bd);paddi
 <label>Cliente<input id="sCli" placeholder="¿A quién?" style="width:150px"></label>
 <label>Unidades<input type="number" id="sUn" min="1" style="width:80px"></label>
 <label>Precio venta/u COP<input type="number" id="sPr" min="0" style="width:130px"></label>
-<button id="sBtn" onclick="addSale()">Vender</button><button class="g" id="sCan" onclick="cancelEdit()" style="display:none">Cancelar</button>
+<label style="flex-direction:row;align-items:center;gap:6px;color:var(--tx)"><input type="checkbox" id="sPaid">¿Ya pagó?</label><button id="sBtn" onclick="addSale()">Vender</button><button class="g" id="sCan" onclick="cancelEdit()" style="display:none">Cancelar</button>
 </div>
 </div>
 
 <div class="card">
 <h2>Ventas</h2>
-<div class="f" style="margin-bottom:8px"><label>Venta desde<input type="date" id="fSalA" onchange="render()"></label><label>hasta<input type="date" id="fSalB" onchange="render()"></label><button class="g" onclick="clr('fSal')">Limpiar</button><span id="sSum" style="color:var(--mu)"></span></div>
+<div class="f" style="margin-bottom:8px"><label>Venta desde<input type="date" id="fSalA" onchange="render()"></label><label>hasta<input type="date" id="fSalB" onchange="render()"></label><label>Pago<select id="fPay" onchange="render()"><option value="">Todos</option><option value="p">Pagados</option><option value="n">Pendientes</option></select></label><button class="g" onclick="clr('fSal')">Limpiar</button><span id="sSum" style="color:var(--mu)"></span></div>
 <div class="scroll"><table id="tSal"></table></div>
 </div>
 
@@ -74,6 +74,29 @@ button.g{background:transparent;color:var(--mu);border:1px solid var(--bd);paddi
 </div>
 
 <script>
+// GitHub Pages: pega aquí la config de tu app web de Firebase (Firestore). Vacío = guarda solo en el navegador.
+ // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyB1NltsU_6PcA5taqJN2GV07fAwE3pVEO4",
+  authDomain: "ventas-b2c5f.firebaseapp.com",
+  projectId: "ventas-b2c5f",
+  storageBucket: "ventas-b2c5f.firebasestorage.app",
+  messagingSenderId: "953249641766",
+  appId: "1:953249641766:web:0f54d0ba74930852d5bde7",
+  measurementId: "G-7Y7NSSHJ9B"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const FIREBASE_CONFIG={apiKey:"",authDomain:"",projectId:"",appId:""};
 const ST=["En camino","Entregado","Devuelto"];
 const KEY="reventa-amazon-v1";
 const seed={orders:[
@@ -109,10 +132,11 @@ function render(){
  const rev=D.sales.reduce((a,s)=>a+s.un*s.pr,0);
  const costSold=D.sales.reduce((a,s)=>{const o=ord(s.oid);return a+(o?cu(o)*s.un:0)},0);
  const profit=rev-costSold, stock=uDel-uSold;
+ const cob=D.sales.filter(s=>s.paid!==false).reduce((a,s)=>a+s.un*s.pr,0), pend=rev-cob;
  const stockVal=sum(del,o=>cu(o)*(o.units-sold(o)));
  const k=[["Unidades compradas",uTot],["Entregadas",uDel],["En camino",uCam],["Vendidas",uSold],["Me quedan (en mano)",stock],
  ["Gastado",M(spent)],["Ingresos por ventas",M(rev)],["Ganancia (ventas)",`<span class="${cls(profit)}">${M(profit)}</span>`],
- ["Balance (ingresos − gastado)",`<span class="${cls(rev-spent)}">${M(rev-spent)}</span>`],["Costo del stock en mano",M(stockVal)]];
+ ["Cobrado",`<span class="pos">${M(cob)}</span>`],["Por cobrar",`<span class="w">${M(pend)}</span>`],["Balance real (cobrado − gastado)",`<span class="${cls(cob-spent)}">${M(cob-spent)}</span>`],["Costo del stock en mano",M(stockVal)]];
  $("kpis").innerHTML=k.map(x=>`<div class="k"><small>${x[0]}</small><b>${x[1]}</b></div>`).join("");
 
  $("tOrd").innerHTML=`<tr><th>Fecha</th><th>Llegada</th><th>Producto</th><th>Pedido</th><th class=n>Unid.</th><th class=n>Total</th><th class=n>Costo/u</th><th>Estado</th><th class=n>Vendidas</th><th class=n>Quedan</th><th class=n>Ganancia</th><th></th></tr>`+
@@ -125,9 +149,9 @@ function render(){
  const av=D.orders.filter(o=>o.st=="Entregado");
  $("sOrd").innerHTML=av.length?av.map(o=>`<option value="${o.id}">${esc(o.prod)} · ${o.date} · quedan ${o.units-sold(o)}</option>`).join(""):`<option value="">Sin pedidos entregados</option>`;
 
- $("tSal").innerHTML=`<tr><th>Fecha</th><th>Producto</th><th>Cliente</th><th class=n>Unid.</th><th class=n>Precio/u</th><th class=n>Total</th><th class=n>Ganancia</th><th></th></tr>`+
+ $("tSal").innerHTML=`<tr><th>Fecha</th><th>Producto</th><th>Cliente</th><th class=n>Unid.</th><th class=n>Precio/u</th><th class=n>Total</th><th class=n>Ganancia</th><th>Pagó</th><th></th></tr>`+
  (D.sales.length?D.sales.filter(inSal).slice().reverse().map(s=>{const o=ord(s.oid);const g=o?s.un*(s.pr-cu(o)):0;
- return `<tr><td>${s.date}</td><td>${o?esc(o.prod):"?"}</td><td>${esc(s.cli||"—")}</td><td class=n>${s.un}</td><td class=n>${M(s.pr)}</td><td class=n>${M(s.un*s.pr)}</td><td class="n ${cls(g)}">${M(g)}</td><td><button class=g onclick="editSale(${s.id})">✎</button> <button class=g onclick="delSale(${s.id})">✕</button></td></tr>`}).join(""):`<tr><td colspan=8 style="color:var(--mu)">Aún no hay ventas.</td></tr>`);
+ return `<tr><td>${s.date}</td><td>${o?esc(o.prod):"?"}</td><td>${esc(s.cli||"—")}</td><td class=n>${s.un}</td><td class=n>${M(s.pr)}</td><td class=n>${M(s.un*s.pr)}</td><td class="n ${cls(g)}">${M(g)}</td><td><input type="checkbox" ${s.paid!==false?"checked":""} onchange="togPaid(${s.id})"></td><td><button class=g onclick="editSale(${s.id})">✎</button> <button class=g onclick="delSale(${s.id})">✕</button></td></tr>`}).join(""):`<tr><td colspan=9 style="color:var(--mu)">Aún no hay ventas.</td></tr>`);
 }
 function setSt(id,v){ord(id).st=v;save()}
 function delOrd(id){if(!confirm("¿Eliminar pedido y sus ventas?"))return;D.orders=D.orders.filter(o=>o.id!=id);D.sales=D.sales.filter(s=>s.oid!=id);save()}
@@ -144,34 +168,42 @@ function addSale(){
  const ed=EDIT?D.sales.find(s=>s.id==EDIT):null;
  const free=o.units-sold(o)+(ed&&ed.oid==o.id?ed.un:0);
  if(u>free)return alert("No te quedan tantas unidades de ese pedido.");
- const rec={oid:o.id,date:$("sDate").value,cli:$("sCli").value.trim(),un:u,pr:p};
+ const rec={oid:o.id,date:$("sDate").value,cli:$("sCli").value.trim(),un:u,pr:p,paid:$("sPaid").checked};
  if(ed)Object.assign(ed,rec);else D.sales.push(Object.assign({id:D.nid++},rec));
  cancelEdit();save()}
 let EDIT=null;
+function togPaid(id){const s=D.sales.find(x=>x.id==id);if(s){s.paid=!(s.paid!==false);save()}}
 function setArr(id,v){ord(id).arr=v;save()}
-function clr(p){$(p+"A").value=$(p+"B").value="";render()}
+function clr(p){$(p+"A").value=$(p+"B").value="";if(p=="fSal")$("fPay").value="";render()}
 function rng(a,b,d){if(!a&&!b)return true;if(!d)return false;return (!a||d>=a)&&(!b||d<=b)}
 function inArr(o){return rng($("fArrA").value,$("fArrB").value,o.arr)}
-function inSal(s){return rng($("fSalA").value,$("fSalB").value,s.date)}
+function inSal(s){const f=$("fPay").value;return rng($("fSalA").value,$("fSalB").value,s.date)&&(!f||(f=="p")==(s.paid!==false))}
 function editSale(id){const s=D.sales.find(x=>x.id==id);if(!s)return;EDIT=id;
- $("sOrd").value=s.oid;$("sDate").value=s.date;$("sCli").value=s.cli||"";$("sUn").value=s.un;$("sPr").value=s.pr;
+ $("sOrd").value=s.oid;$("sDate").value=s.date;$("sCli").value=s.cli||"";$("sUn").value=s.un;$("sPr").value=s.pr;$("sPaid").checked=s.paid!==false;
  $("sBtn").textContent="Guardar cambios";$("sCan").style.display="";$("sBtn").scrollIntoView({block:"center"})}
-function cancelEdit(){EDIT=null;["sCli","sUn","sPr"].forEach(i=>$(i).value="");$("sBtn").textContent="Vender";$("sCan").style.display="none"}
+function cancelEdit(){EDIT=null;$("sPaid").checked=false;["sCli","sUn","sPr"].forEach(i=>$(i).value="");$("sBtn").textContent="Vender";$("sCan").style.display="none"}
 function sums(){
  const fo=D.orders.filter(inArr),fs=D.sales.filter(inSal);
- const oa=$("fArrA").value||$("fArrB").value, sa=$("fSalA").value||$("fSalB").value;
+ const oa=$("fArrA").value||$("fArrB").value, sa=$("fSalA").value||$("fSalB").value||$("fPay").value;
  const nr=fo.filter(o=>o.st!="Devuelto");
  $("oSum").textContent=oa?`${fo.length} pedido(s) · ${nr.reduce((a,o)=>a+o.units,0)} unid. · gastado ${M(nr.reduce((a,o)=>a+o.total,0))}`:"";
- let rev=0,pr=0;fs.forEach(s=>{const o=ord(s.oid);rev+=s.un*s.pr;pr+=o?s.un*(s.pr-cu(o)):0});
- $("sSum").textContent=sa?`${fs.length} venta(s) · ${fs.reduce((a,s)=>a+s.un,0)} unid. · ingresos ${M(rev)} · ganancia ${M(pr)}`:"";
+ let rev=0,pr=0,cb=0;fs.forEach(s=>{const o=ord(s.oid);rev+=s.un*s.pr;if(s.paid!==false)cb+=s.un*s.pr;pr+=o?s.un*(s.pr-cu(o)):0});
+ $("sSum").textContent=sa?`${fs.length} venta(s) · ${fs.reduce((a,s)=>a+s.un,0)} unid. · ingresos ${M(rev)} · cobrado ${M(cb)} · por cobrar ${M(rev-cb)} · ganancia ${M(pr)}`:"";
 }
 function exp(){const a=document.createElement("a");a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(D));a.download="reventa-amazon.json";a.click()}
 function imp(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.orders)throw 0;D=j;save()}catch(x){alert("Archivo no válido")}};r.readAsText(f)}
 render();
 (async()=>{try{
- const c=window.claude?await claude.use("db"):null;
- if(!c){setSync("Solo en este dispositivo");return}
- DB=c.doc("app/state");let first=true;
+ let ref=null;
+ if(window.claude){const c=await claude.use("db");if(c)ref=c.doc("app/state")}
+ else if(FIREBASE_CONFIG.apiKey){
+  const ld=u=>new Promise((r,j)=>{const s=document.createElement("script");s.src=u;s.onload=r;s.onerror=j;document.head.appendChild(s)});
+  const b="https://www.gstatic.com/firebasejs/10.12.2/";
+  await ld(b+"firebase-app-compat.js");await ld(b+"firebase-firestore-compat.js");
+  firebase.initializeApp(FIREBASE_CONFIG);ref=firebase.firestore().collection("reventa").doc("state");
+ }
+ if(!ref){setSync("Solo en este dispositivo");return}
+ DB=ref;let first=true;
  DB.onSnapshot(s=>{
   if(s.metadata&&s.metadata.hasPendingWrites)return;
   if(s.exists){const d=JSON.parse(JSON.stringify(s.data()));if(d&&d.orders){D=d;try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}render();setSync("☁ Sincronizado")}}
