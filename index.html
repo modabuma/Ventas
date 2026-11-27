@@ -27,6 +27,7 @@ button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:7px 12
 button.g{background:transparent;color:var(--mu);border:1px solid var(--bd);padding:4px 8px}
 .pos{color:var(--ok)}.neg{color:var(--bad)}.w{color:var(--warn)}
 .tools{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+@media(max-width:600px){body{padding:10px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.k b{font-size:16px}}
 </style>
 </head>
 <body>
@@ -35,7 +36,12 @@ button.g{background:transparent;color:var(--mu);border:1px solid var(--bd);paddi
 
 <div class="card">
 <h2>Pedidos</h2>
-<div class="f" style="margin-bottom:8px"><label>Llegada desde<input type="date" id="fArrA" onchange="render()"></label><label>hasta<input type="date" id="fArrB" onchange="render()"></label><button class="g" onclick="clr('fArr')">Limpiar</button><span id="oSum" style="color:var(--mu)"></span></div>
+<div class="f" style="margin-bottom:8px">
+<label>Llegada desde<input type="date" id="fArrA" onchange="render()"></label>
+<label>hasta<input type="date" id="fArrB" onchange="render()"></label>
+<button class="g" onclick="clr('fArr')">Limpiar</button>
+<span id="oSum" style="color:var(--mu)"></span>
+</div>
 <div class="scroll"><table id="tOrd"></table></div>
 <h2 style="margin-top:14px">Agregar pedido</h2>
 <div class="f">
@@ -58,13 +64,21 @@ button.g{background:transparent;color:var(--mu);border:1px solid var(--bd);paddi
 <label>Cliente<input id="sCli" placeholder="¿A quién?" style="width:150px"></label>
 <label>Unidades<input type="number" id="sUn" min="1" style="width:80px"></label>
 <label>Precio venta/u COP<input type="number" id="sPr" min="0" style="width:130px"></label>
-<label style="flex-direction:row;align-items:center;gap:6px;color:var(--tx)"><input type="checkbox" id="sPaid">¿Ya pagó?</label><button id="sBtn" onclick="addSale()">Vender</button><button class="g" id="sCan" onclick="cancelEdit()" style="display:none">Cancelar</button>
+<label style="flex-direction:row;align-items:center;gap:6px;color:var(--tx)"><input type="checkbox" id="sPaid">¿Ya pagó?</label>
+<button id="sBtn" onclick="addSale()">Vender</button>
+<button class="g" id="sCan" onclick="cancelEdit()" style="display:none">Cancelar</button>
 </div>
 </div>
 
 <div class="card">
 <h2>Ventas</h2>
-<div class="f" style="margin-bottom:8px"><label>Venta desde<input type="date" id="fSalA" onchange="render()"></label><label>hasta<input type="date" id="fSalB" onchange="render()"></label><label>Pago<select id="fPay" onchange="render()"><option value="">Todos</option><option value="p">Pagados</option><option value="n">Pendientes</option></select></label><button class="g" onclick="clr('fSal')">Limpiar</button><span id="sSum" style="color:var(--mu)"></span></div>
+<div class="f" style="margin-bottom:8px">
+<label>Venta desde<input type="date" id="fSalA" onchange="render()"></label>
+<label>hasta<input type="date" id="fSalB" onchange="render()"></label>
+<label>Pago<select id="fPay" onchange="render()"><option value="">Todos</option><option value="p">Pagados</option><option value="n">Pendientes</option></select></label>
+<button class="g" onclick="clr('fSal')">Limpiar</button>
+<span id="sSum" style="color:var(--mu)"></span>
+</div>
 <div class="scroll"><table id="tSal"></table></div>
 </div>
 
@@ -74,16 +88,7 @@ button.g{background:transparent;color:var(--mu);border:1px solid var(--bd);paddi
 </div>
 
 <script>
-// GitHub Pages: pega aquí la config de tu app web de Firebase (Firestore). Vacío = guarda solo en el navegador.
- // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyB1NltsU_6PcA5taqJN2GV07fAwE3pVEO4",
   authDomain: "ventas-b2c5f.firebaseapp.com",
   projectId: "ventas-b2c5f",
@@ -93,124 +98,169 @@ const firebaseConfig = {
   measurementId: "G-7Y7NSSHJ9B"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const FIREBASE_CONFIG={apiKey:"",authDomain:"",projectId:"",appId:""};
-const ST=["En camino","Entregado","Devuelto"];
-const KEY="reventa-amazon-v1";
-const seed={orders:[
-{id:1,date:"2026-11-12",num:"114-7359891-4119437",prod:"Vaseline Lip Therapy Rosy Lips Mini 12-Pack",units:12,total:107337.78,st:"Entregado"},
-{id:2,date:"2026-11-13",num:"114-6678400-2626614",prod:"Vaseline Cocoa Radiant Gel Oil (6 x 1.69 fl oz)",units:6,total:47612.99,st:"Devuelto"},
-{id:3,date:"2026-11-17",num:"114-6567263-7587420",prod:"eos Shea Better Sensitive Skin Body Lotion 16 fl oz",units:1,total:33834.66,st:"En camino"},
-{id:4,date:"2026-11-17",num:"114-9614668-1873841",prod:"Vaseline Lip Therapy Rosy Lips Mini 12-Pack",units:12,total:108562.76,st:"En camino"},
-{id:5,date:"2026-11-22",num:"114-5357583-1828249",prod:"eos Shea Better Body Lotion Strawberry Dream 16 fl oz",units:1,total:35730.19,st:"En camino"},
-{id:6,date:"2026-11-23",num:"114-5239261-4811452",prod:"Vaseline Cocoa Radiant Gel Oil (6 x 1.69 fl oz)",units:6,total:60494.05,st:"En camino"}],sales:[],nid:7};
+const ST = ["En camino", "Entregado", "Devuelto"];
+const KEY = "reventa-amazon-v1";
+const seed = {orders:[
+{id:1,date:"2026-11-12",arr:"",num:"114-7359891-4119437",prod:"Vaseline Lip Therapy Rosy Lips Mini 12-Pack",units:12,total:107337.78,st:"Entregado"},
+{id:2,date:"2026-11-13",arr:"",num:"114-6678400-2626614",prod:"Vaseline Cocoa Radiant Gel Oil (6 x 1.69 fl oz)",units:6,total:47612.99,st:"Devuelto"},
+{id:3,date:"2026-11-17",arr:"",num:"114-6567263-7587420",prod:"eos Shea Better Sensitive Skin Body Lotion 16 fl oz",units:1,total:33834.66,st:"En camino"},
+{id:4,date:"2026-11-17",arr:"",num:"114-9614668-1873841",prod:"Vaseline Lip Therapy Rosy Lips Mini 12-Pack",units:12,total:108562.76,st:"En camino"},
+{id:5,date:"2026-11-22",arr:"",num:"114-5357583-1828249",prod:"eos Shea Better Body Lotion Strawberry Dream 16 fl oz",units:1,total:35730.19,st:"En camino"},
+{id:6,date:"2026-11-23",arr:"",num:"114-5239261-4811452",prod:"Vaseline Cocoa Radiant Gel Oil (6 x 1.69 fl oz)",units:6,total:60494.05,st:"En camino"}],sales:[],nid:7};
+
 let D;
-try{D=JSON.parse(localStorage.getItem(KEY))}catch(e){}
-if(!D||!D.orders)D=JSON.parse(JSON.stringify(seed));
-let DB=null,pt;
-function setSync(t){const e=$("sync");if(e)e.textContent=t}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}render();push()}
-function push(){if(!DB)return;clearTimeout(pt);pt=setTimeout(()=>{setSync("Guardando…");DB.set(JSON.parse(JSON.stringify(D))).then(()=>setSync("☁ Sincronizado")).catch(e=>setSync("⚠ No se pudo guardar en la nube ("+((e&&e.code)||"error")+")"))},300)}
-const $=id=>document.getElementById(id);
-const M=n=>"$"+Math.round(n).toLocaleString("es-CO");
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const cu=o=>o.total/o.units;
-const sold=o=>D.sales.filter(s=>s.oid==o.id).reduce((a,s)=>a+s.un,0);
-const ord=id=>D.orders.find(o=>o.id==id);
-const cls=n=>n>0?"pos":n<0?"neg":"";
-$("oSt").innerHTML=ST.map(s=>`<option>${s}</option>`).join("");
-$("oDate").value=$("sDate").value=new Date().toISOString().slice(0,10);
+try { D = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
+if (!D || !D.orders) D = JSON.parse(JSON.stringify(seed));
+
+let DB = null, pt = null;
+const $ = id => document.getElementById(id);
+const M = n => "$" + Math.round(Number(n)||0).toLocaleString("es-CO");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const cu = o => o.total / o.units;
+const sold = o => D.sales.filter(s => s.oid == o.id).reduce((a,s) => a+s.un,0);
+const ord = id => D.orders.find(o => o.id == id);
+const cls = n => n > 0 ? "pos" : n < 0 ? "neg" : "";
+const todayLocal = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+};
+function setSync(t){const e=$("sync");if(e)e.textContent=t;}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(D)); } catch(e) {}
+  render();
+  push();
+}
+function push(){
+  if(!DB)return;
+  clearTimeout(pt);
+  pt=setTimeout(()=>{
+    setSync("Guardando…");
+    DB.set(JSON.parse(JSON.stringify(D)))
+      .then(()=>setSync("☁ Sincronizado"))
+      .catch(e=>{
+        console.error("Firestore write error",e);
+        setSync("⚠ No se pudo guardar ("+(e?.code||"error")+")");
+      });
+  },350);
+}
+$("oSt").innerHTML = ST.map(s => `<option value="${s}">${s}</option>`).join("");
+$("oSt").value = "En camino";
+$("oDate").value = $("sDate").value = todayLocal();
 
 function render(){
- sums();
- const act=D.orders.filter(o=>o.st!="Devuelto"), del=act.filter(o=>o.st=="Entregado"), cam=act.filter(o=>o.st=="En camino");
- const sum=(a,f)=>a.reduce((x,o)=>x+f(o),0);
- const spent=sum(act,o=>o.total), uTot=sum(act,o=>o.units), uDel=sum(del,o=>o.units), uCam=sum(cam,o=>o.units);
- const uSold=D.sales.reduce((a,s)=>a+s.un,0);
- const rev=D.sales.reduce((a,s)=>a+s.un*s.pr,0);
- const costSold=D.sales.reduce((a,s)=>{const o=ord(s.oid);return a+(o?cu(o)*s.un:0)},0);
- const profit=rev-costSold, stock=uDel-uSold;
- const cob=D.sales.filter(s=>s.paid!==false).reduce((a,s)=>a+s.un*s.pr,0), pend=rev-cob;
- const stockVal=sum(del,o=>cu(o)*(o.units-sold(o)));
- const k=[["Unidades compradas",uTot],["Entregadas",uDel],["En camino",uCam],["Vendidas",uSold],["Me quedan (en mano)",stock],
- ["Gastado",M(spent)],["Ingresos por ventas",M(rev)],["Ganancia (ventas)",`<span class="${cls(profit)}">${M(profit)}</span>`],
- ["Cobrado",`<span class="pos">${M(cob)}</span>`],["Por cobrar",`<span class="w">${M(pend)}</span>`],["Balance real (cobrado − gastado)",`<span class="${cls(cob-spent)}">${M(cob-spent)}</span>`],["Costo del stock en mano",M(stockVal)]];
- $("kpis").innerHTML=k.map(x=>`<div class="k"><small>${x[0]}</small><b>${x[1]}</b></div>`).join("");
+  sums();
+  const act=D.orders.filter(o=>o.st!="Devuelto"), del=act.filter(o=>o.st=="Entregado"), cam=act.filter(o=>o.st=="En camino");
+  const sum=(a,f)=>a.reduce((x,o)=>x+f(o),0);
+  const spent=sum(act,o=>o.total), uTot=sum(act,o=>o.units), uDel=sum(del,o=>o.units), uCam=sum(cam,o=>o.units);
+  const uSold=D.sales.reduce((a,s)=>a+s.un,0), rev=D.sales.reduce((a,s)=>a+s.un*s.pr,0);
+  const costSold=D.sales.reduce((a,s)=>{const o=ord(s.oid);return a+(o?cu(o)*s.un:0)},0);
+  const profit=rev-costSold, stock=uDel-uSold;
+  const cob=D.sales.filter(s=>s.paid!==false).reduce((a,s)=>a+s.un*s.pr,0), pend=rev-cob;
+  const stockVal=sum(del,o=>cu(o)*(o.units-sold(o)));
+  const k=[["Unidades compradas",uTot],["Entregadas",uDel],["En camino",uCam],["Vendidas",uSold],["Me quedan (en mano)",stock],
+  ["Gastado",M(spent)],["Ingresos por ventas",M(rev)],["Ganancia (ventas)",`<span class="${cls(profit)}">${M(profit)}</span>`],
+  ["Cobrado",`<span class="pos">${M(cob)}</span>`],["Por cobrar",`<span class="w">${M(pend)}</span>`],["Balance real (cobrado − gastado)",`<span class="${cls(cob-spent)}">${M(cob-spent)}</span>`],["Costo del stock en mano",M(stockVal)]];
+  $("kpis").innerHTML=k.map(x=>`<div class="k"><small>${x[0]}</small><b>${x[1]}</b></div>`).join("");
 
- $("tOrd").innerHTML=`<tr><th>Fecha</th><th>Llegada</th><th>Producto</th><th>Pedido</th><th class=n>Unid.</th><th class=n>Total</th><th class=n>Costo/u</th><th>Estado</th><th class=n>Vendidas</th><th class=n>Quedan</th><th class=n>Ganancia</th><th></th></tr>`+
- D.orders.filter(inArr).map(o=>{const v=sold(o),g=D.sales.filter(s=>s.oid==o.id).reduce((a,s)=>a+s.un*(s.pr-cu(o)),0);const ret=o.st=="Devuelto";
- return `<tr style="${ret?'opacity:.55':''}"><td>${o.date}</td><td><input type="date" value="${o.arr||''}" onchange="setArr(${o.id},this.value)"></td><td>${esc(o.prod)}</td><td>${esc(o.num)}</td><td class=n>${o.units}</td><td class=n>${M(o.total)}</td><td class=n>${M(cu(o))}</td>
- <td><select onchange="setSt(${o.id},this.value)">${ST.map(s=>`<option ${s==o.st?"selected":""}>${s}</option>`).join("")}</select></td>
- <td class=n>${v}</td><td class=n>${o.st=="Entregado"?o.units-v:"—"}</td><td class="n ${cls(g)}">${o.st=="Entregado"?M(g):"—"}</td>
- <td><button class=g onclick="delOrd(${o.id})">✕</button></td></tr>`}).join("");
+  $("tOrd").innerHTML=`<tr><th>Fecha</th><th>Llegada</th><th>Producto</th><th>Pedido</th><th class=n>Unid.</th><th class=n>Total</th><th class=n>Costo/u</th><th>Estado</th><th class=n>Vendidas</th><th class=n>Quedan</th><th class=n>Ganancia</th><th></th></tr>`+
+  D.orders.filter(inArr).map(o=>{
+    const v=sold(o),g=D.sales.filter(s=>s.oid==o.id).reduce((a,s)=>a+s.un*(s.pr-cu(o)),0),ret=o.st=="Devuelto";
+    return `<tr style="${ret?'opacity:.55':''}"><td>${o.date||""}</td><td><input type="date" value="${o.arr||""}" onchange="setArr(${o.id},this.value)"></td><td>${esc(o.prod)}</td><td>${esc(o.num)}</td><td class=n>${o.units}</td><td class=n>${M(o.total)}</td><td class=n>${M(cu(o))}</td>
+    <td><select onchange="setSt(${o.id},this.value)">${ST.map(s=>`<option ${s==o.st?"selected":""}>${s}</option>`).join("")}</select></td>
+    <td class=n>${v}</td><td class=n>${o.st=="Entregado"?o.units-v:"—"}</td><td class="n ${cls(g)}">${o.st=="Entregado"?M(g):"—"}</td><td><button class=g onclick="delOrd(${o.id})">✕</button></td></tr>`;
+  }).join("");
 
- const av=D.orders.filter(o=>o.st=="Entregado");
- $("sOrd").innerHTML=av.length?av.map(o=>`<option value="${o.id}">${esc(o.prod)} · ${o.date} · quedan ${o.units-sold(o)}</option>`).join(""):`<option value="">Sin pedidos entregados</option>`;
+  const av=D.orders.filter(o=>o.st=="Entregado");
+  $("sOrd").innerHTML=av.length?av.map(o=>`<option value="${o.id}">${esc(o.prod)} · ${o.date} · quedan ${o.units-sold(o)}</option>`).join(""):`<option value="">Sin pedidos entregados</option>`;
 
- $("tSal").innerHTML=`<tr><th>Fecha</th><th>Producto</th><th>Cliente</th><th class=n>Unid.</th><th class=n>Precio/u</th><th class=n>Total</th><th class=n>Ganancia</th><th>Pagó</th><th></th></tr>`+
- (D.sales.length?D.sales.filter(inSal).slice().reverse().map(s=>{const o=ord(s.oid);const g=o?s.un*(s.pr-cu(o)):0;
- return `<tr><td>${s.date}</td><td>${o?esc(o.prod):"?"}</td><td>${esc(s.cli||"—")}</td><td class=n>${s.un}</td><td class=n>${M(s.pr)}</td><td class=n>${M(s.un*s.pr)}</td><td class="n ${cls(g)}">${M(g)}</td><td><input type="checkbox" ${s.paid!==false?"checked":""} onchange="togPaid(${s.id})"></td><td><button class=g onclick="editSale(${s.id})">✎</button> <button class=g onclick="delSale(${s.id})">✕</button></td></tr>`}).join(""):`<tr><td colspan=9 style="color:var(--mu)">Aún no hay ventas.</td></tr>`);
+  $("tSal").innerHTML=`<tr><th>Fecha</th><th>Producto</th><th>Cliente</th><th class=n>Unid.</th><th class=n>Precio/u</th><th class=n>Total</th><th class=n>Ganancia</th><th>Pagó</th><th></th></tr>`+
+  (D.sales.length?D.sales.filter(inSal).slice().reverse().map(s=>{
+    const o=ord(s.oid),g=o?s.un*(s.pr-cu(o)):0;
+    return `<tr><td>${s.date}</td><td>${o?esc(o.prod):"?"}</td><td>${esc(s.cli||"—")}</td><td class=n>${s.un}</td><td class=n>${M(s.pr)}</td><td class=n>${M(s.un*s.pr)}</td><td class="n ${cls(g)}">${M(g)}</td><td><input type="checkbox" ${s.paid!==false?"checked":""} onchange="togPaid(${s.id})"></td><td><button class=g onclick="editSale(${s.id})">✎</button> <button class=g onclick="delSale(${s.id})">✕</button></td></tr>`;
+  }).join(""):`<tr><td colspan=9 style="color:var(--mu)">Aún no hay ventas.</td></tr>`);
 }
-function setSt(id,v){ord(id).st=v;save()}
-function delOrd(id){if(!confirm("¿Eliminar pedido y sus ventas?"))return;D.orders=D.orders.filter(o=>o.id!=id);D.sales=D.sales.filter(s=>s.oid!=id);save()}
-function delSale(id){D.sales=D.sales.filter(s=>s.id!=id);save()}
+function setSt(id,v){ord(id).st=v;save();}
+function delOrd(id){if(!confirm("¿Eliminar pedido y sus ventas?"))return;D.orders=D.orders.filter(o=>o.id!=id);D.sales=D.sales.filter(s=>s.oid!=id);save();}
+function delSale(id){D.sales=D.sales.filter(s=>s.id!=id);save();}
 function addOrd(){
- const u=+$("oUn").value,t=+$("oTot").value,p=$("oProd").value.trim();
- if(!p||u<1||t<=0)return alert("Completa producto, unidades y total.");
- D.orders.push({id:D.nid++,date:$("oDate").value,arr:$("oArr").value,num:$("oNum").value.trim(),prod:p,units:u,total:t,st:$("oSt").value});
- ["oNum","oProd","oUn","oTot","oArr"].forEach(i=>$(i).value="");save()}
-function addSale(){
- const o=ord($("sOrd").value),u=+$("sUn").value,p=+$("sPr").value;
- if(!o)return alert("Elige un pedido entregado.");
- if(u<1||p<=0)return alert("Indica unidades y precio de venta.");
- const ed=EDIT?D.sales.find(s=>s.id==EDIT):null;
- const free=o.units-sold(o)+(ed&&ed.oid==o.id?ed.un:0);
- if(u>free)return alert("No te quedan tantas unidades de ese pedido.");
- const rec={oid:o.id,date:$("sDate").value,cli:$("sCli").value.trim(),un:u,pr:p,paid:$("sPaid").checked};
- if(ed)Object.assign(ed,rec);else D.sales.push(Object.assign({id:D.nid++},rec));
- cancelEdit();save()}
-let EDIT=null;
-function togPaid(id){const s=D.sales.find(x=>x.id==id);if(s){s.paid=!(s.paid!==false);save()}}
-function setArr(id,v){ord(id).arr=v;save()}
-function clr(p){$(p+"A").value=$(p+"B").value="";if(p=="fSal")$("fPay").value="";render()}
-function rng(a,b,d){if(!a&&!b)return true;if(!d)return false;return (!a||d>=a)&&(!b||d<=b)}
-function inArr(o){return rng($("fArrA").value,$("fArrB").value,o.arr)}
-function inSal(s){const f=$("fPay").value;return rng($("fSalA").value,$("fSalB").value,s.date)&&(!f||(f=="p")==(s.paid!==false))}
-function editSale(id){const s=D.sales.find(x=>x.id==id);if(!s)return;EDIT=id;
- $("sOrd").value=s.oid;$("sDate").value=s.date;$("sCli").value=s.cli||"";$("sUn").value=s.un;$("sPr").value=s.pr;$("sPaid").checked=s.paid!==false;
- $("sBtn").textContent="Guardar cambios";$("sCan").style.display="";$("sBtn").scrollIntoView({block:"center"})}
-function cancelEdit(){EDIT=null;$("sPaid").checked=false;["sCli","sUn","sPr"].forEach(i=>$(i).value="");$("sBtn").textContent="Vender";$("sCan").style.display="none"}
-function sums(){
- const fo=D.orders.filter(inArr),fs=D.sales.filter(inSal);
- const oa=$("fArrA").value||$("fArrB").value, sa=$("fSalA").value||$("fSalB").value||$("fPay").value;
- const nr=fo.filter(o=>o.st!="Devuelto");
- $("oSum").textContent=oa?`${fo.length} pedido(s) · ${nr.reduce((a,o)=>a+o.units,0)} unid. · gastado ${M(nr.reduce((a,o)=>a+o.total,0))}`:"";
- let rev=0,pr=0,cb=0;fs.forEach(s=>{const o=ord(s.oid);rev+=s.un*s.pr;if(s.paid!==false)cb+=s.un*s.pr;pr+=o?s.un*(s.pr-cu(o)):0});
- $("sSum").textContent=sa?`${fs.length} venta(s) · ${fs.reduce((a,s)=>a+s.un,0)} unid. · ingresos ${M(rev)} · cobrado ${M(cb)} · por cobrar ${M(rev-cb)} · ganancia ${M(pr)}`:"";
+  const u=+$("oUn").value,t=+$("oTot").value,p=$("oProd").value.trim();
+  if(!p||u<1||t<=0)return alert("Completa producto, unidades y total.");
+  D.orders.push({id:D.nid++,date:$("oDate").value,arr:$("oArr").value,num:$("oNum").value.trim(),prod:p,units:u,total:t,st:$("oSt").value});
+  ["oNum","oProd","oUn","oTot","oArr"].forEach(i=>$(i).value="");
+  $("oSt").value="En camino";
+  save();
 }
-function exp(){const a=document.createElement("a");a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(D));a.download="reventa-amazon.json";a.click()}
-function imp(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.orders)throw 0;D=j;save()}catch(x){alert("Archivo no válido")}};r.readAsText(f)}
+function addSale(){
+  const o=ord($("sOrd").value),u=+$("sUn").value,p=+$("sPr").value;
+  if(!o)return alert("Elige un pedido entregado.");
+  if(u<1||p<=0)return alert("Indica unidades y precio de venta.");
+  const ed=EDIT?D.sales.find(s=>s.id==EDIT):null;
+  const free=o.units-sold(o)+(ed&&ed.oid==o.id?ed.un:0);
+  if(u>free)return alert("No te quedan tantas unidades de ese pedido.");
+  const rec={oid:o.id,date:$("sDate").value,cli:$("sCli").value.trim(),un:u,pr:p,paid:$("sPaid").checked};
+  if(ed)Object.assign(ed,rec);else D.sales.push(Object.assign({id:D.nid++},rec));
+  cancelEdit();save();
+}
+let EDIT=null;
+function togPaid(id){const s=D.sales.find(x=>x.id==id);if(s){s.paid=!(s.paid!==false);save();}}
+function setArr(id,v){ord(id).arr=v;save();}
+function clr(p){$(p+"A").value=$(p+"B").value="";if(p=="fSal")$("fPay").value="";render();}
+function rng(a,b,d){if(!a&&!b)return true;if(!d)return false;return(!a||d>=a)&&(!b||d<=b);}
+function inArr(o){return rng($("fArrA").value,$("fArrB").value,o.arr);}
+function inSal(s){const f=$("fPay").value;return rng($("fSalA").value,$("fSalB").value,s.date)&&(!f||(f=="p")==(s.paid!==false));}
+function editSale(id){
+  const s=D.sales.find(x=>x.id==id);if(!s)return;EDIT=id;
+  $("sOrd").value=s.oid;$("sDate").value=s.date;$("sCli").value=s.cli||"";$("sUn").value=s.un;$("sPr").value=s.pr;$("sPaid").checked=s.paid!==false;
+  $("sBtn").textContent="Guardar cambios";$("sCan").style.display="";$("sBtn").scrollIntoView({block:"center"});
+}
+function cancelEdit(){EDIT=null;$("sPaid").checked=false;["sCli","sUn","sPr"].forEach(i=>$(i).value="");$("sBtn").textContent="Vender";$("sCan").style.display="none";}
+function sums(){
+  const fo=D.orders.filter(inArr),fs=D.sales.filter(inSal);
+  const oa=$("fArrA").value||$("fArrB").value,sa=$("fSalA").value||$("fSalB").value||$("fPay").value;
+  const nr=fo.filter(o=>o.st!="Devuelto");
+  $("oSum").textContent=oa?`${fo.length} pedido(s) · ${nr.reduce((a,o)=>a+o.units,0)} unid. · gastado ${M(nr.reduce((a,o)=>a+o.total,0))}`:"";
+  let rev=0,pr=0,cb=0;fs.forEach(s=>{const o=ord(s.oid);rev+=s.un*s.pr;if(s.paid!==false)cb+=s.un*s.pr;pr+=o?s.un*(s.pr-cu(o)):0;});
+  $("sSum").textContent=sa?`${fs.length} venta(s) · ${fs.reduce((a,s)=>a+s.un,0)} unid. · ingresos ${M(rev)} · cobrado ${M(cb)} · por cobrar ${M(rev-cb)} · ganancia ${M(pr)}`:"";
+}
+function exp(){const a=document.createElement("a");a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(D));a.download="reventa-amazon.json";a.click();}
+function imp(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.orders||!j.sales)throw 0;D=j;save();alert("Respaldo importado correctamente.");}catch(x){alert("Archivo no válido.");}};r.readAsText(f);e.target.value="";}
 render();
-(async()=>{try{
- let ref=null;
- if(window.claude){const c=await claude.use("db");if(c)ref=c.doc("app/state")}
- else if(FIREBASE_CONFIG.apiKey){
-  const ld=u=>new Promise((r,j)=>{const s=document.createElement("script");s.src=u;s.onload=r;s.onerror=j;document.head.appendChild(s)});
-  const b="https://www.gstatic.com/firebasejs/10.12.2/";
-  await ld(b+"firebase-app-compat.js");await ld(b+"firebase-firestore-compat.js");
-  firebase.initializeApp(FIREBASE_CONFIG);ref=firebase.firestore().collection("reventa").doc("state");
- }
- if(!ref){setSync("Solo en este dispositivo");return}
- DB=ref;let first=true;
- DB.onSnapshot(s=>{
-  if(s.metadata&&s.metadata.hasPendingWrites)return;
-  if(s.exists){const d=JSON.parse(JSON.stringify(s.data()));if(d&&d.orders){D=d;try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}render();setSync("☁ Sincronizado")}}
-  else if(first){push()}
-  first=false;
- },e=>setSync("⚠ Sin conexión a la nube"));
-}catch(e){setSync("Solo en este dispositivo")}})();
+
+(async()=>{
+  try{
+    setSync("Conectando a Firebase…");
+    const loadScript=url=>new Promise((resolve,reject)=>{
+      const s=document.createElement("script");s.src=url;s.onload=resolve;s.onerror=()=>reject(new Error("No se pudo cargar Firebase"));document.head.appendChild(s);
+    });
+    const base="https://www.gstatic.com/firebasejs/10.12.2/";
+    await loadScript(base+"firebase-app-compat.js");
+    await loadScript(base+"firebase-firestore-compat.js");
+    if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+    const ref=firebase.firestore().collection("reventa").doc("state");
+    DB=ref;
+    let first=true;
+    DB.onSnapshot(snapshot=>{
+      if(snapshot.metadata&&snapshot.metadata.hasPendingWrites)return;
+      if(snapshot.exists){
+        const data=snapshot.data();
+        if(data&&data.orders){
+          D=JSON.parse(JSON.stringify(data));
+          try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){}
+          render();setSync("☁ Sincronizado");
+        }
+      }else if(first){
+        push();
+      }
+      first=false;
+    },error=>{
+      console.error("Firestore listener error",error);
+      setSync("⚠ Error de conexión");
+    });
+  }catch(error){
+    console.error("Firebase initialization error",error);
+    setSync("⚠ Firebase no disponible");
+  }
+})();
 </script>
 </body>
 </html>
